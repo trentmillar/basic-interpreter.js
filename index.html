@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASIC Web App Interpreter</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #33ff33;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            height: calc(100vh - 40px);
+            flex-direction: column;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .editor-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+        }
+        #editor {
+            flex: 1;
+            background-color: #111;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: none;
+            tab-size: 4;
+            line-height: 1.5;
+            white-space: pre;
+        }
+        #output {
+            flex: 1;
+            background-color: #111;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #111;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background-color: #33ff33;
+            color: #111;
+        }
+        .line-numbers {
+            padding: 10px 5px;
+            text-align: right;
+            background-color: #0a0a0a;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            border-right: none;
+            user-select: none;
+            min-width: 40px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .editor-wrapper {
+            display: flex;
+            flex: 1;
+        }
+        .examples {
+            margin-top: 10px;
+        }
+        .examples button {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .input-box {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background-color: #111;
+            border: 1px solid #33ff33;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-box input {
+            flex: 1;
+            background-color: #000;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px;
+            font-family: monospace;
+        }
+        .input-box button {
+            background-color: #111;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BASIC Web App Interpreter</h1>
+            <p>Write your BASIC code below and click "RUN" to execute</p>
+        </div>
+        
+        <div class="examples">
+            <p>Examples:</p>
+            <button onclick="loadExample('hello')">Hello World</button>
+            <button onclick="loadExample('counter')">Counter</button>
+            <button onclick="loadExample('calculator')">Calculator</button>
+            <button onclick="loadExample('game')">Simple Game</button>
+        </div>
+
+        <div class="controls">
+            <button onclick="runCode()">RUN</button>
+            <button onclick="clearOutput()">CLEAR OUTPUT</button>
+            <button onclick="newProgram()">NEW</button>
+        </div>
+        
+        <div class="editor-container">
+            <div class="editor-wrapper">
+                <div class="line-numbers" id="line-numbers"></div>
+                <textarea id="editor" spellcheck="false"></textarea>
+            </div>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize line numbers and editor
+        const editor = document.getElementById('editor');
+        const lineNumbers = document.getElementById('line-numbers');
+        const output = document.getElementById('output');
+        
+        // Initial content
+        editor.value = '10 REM Welcome to BASIC Web App\n20 PRINT "Hello, World!"\n30 END';
+        updateLineNumbers();
+        
+        // Update line numbers when editor content changes
+        editor.addEventListener('input', updateLineNumbers);
+        editor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = editor.scrollTop;
+        });
+        
+        // Ensure line numbers sync with editor content
+        editor.addEventListener('keydown', (e) => {
+            // Update line numbers after keyboard events
+            setTimeout(updateLineNumbers, 0);
+        });
+        
+        function updateLineNumbers() {
+            const lines = editor.value.split('\n');
+            lineNumbers.innerHTML = '';
+            
+            // Create a line number for each line
+            for (let i = 0; i < lines.length; i++) {
+                const lineNum = document.createElement('div');
+                lineNum.textContent = (i + 1);
+                lineNumbers.appendChild(lineNum);
+            }
+        }
+        
+        function clearOutput() {
+            output.textContent = '';
+            // Remove any input boxes that might be present
+            const inputBoxes = output.querySelectorAll('.input-box');
+            inputBoxes.forEach(box => box.remove());
+        }
+        
+        function newProgram() {
+            editor.value = '';
+            clearOutput();
+            updateLineNumbers();
+        }
+        
+        function loadExample(type) {
+            switch(type) {
+                case 'hello':
+                    editor.value = '10 REM Hello World Program\n20 CLS\n30 PRINT "Hello, World!"\n40 PRINT "Welcome to BASIC Web App"\n50 END';
+                    break;
+                case 'counter':
+                    editor.value = '10 REM Counter Program\n20 CLS\n30 LET count = 0\n40 PRINT "Counter value: "; count\n50 LET count = count + 1\n60 IF count <= 10 THEN GOTO 40\n70 PRINT "Counter finished!"\n80 END';
+                    break;
+                case 'calculator':
+                    editor.value = '10 REM Simple Calculator\n20 CLS\n30 INPUT "Enter first number: "; A\n40 IF A = "" THEN PRINT "Calculator cancelled.": END\n50 LET A = VAL(A)\n60 INPUT "Enter second number: "; B\n70 IF B = "" THEN PRINT "Calculator cancelled.": END\n80 LET B = VAL(B)\n90 PRINT "Sum: "; A + B\n100 PRINT "Difference: "; A - B\n110 PRINT "Product: "; A * B\n120 PRINT "Division: "; \n130 IF B <> 0 THEN PRINT A / B ELSE PRINT "Cannot divide by zero"\n140 END';
+                    break;
+                case 'game':
+                    editor.value = '10 REM Number Guessing Game\n20 CLS\n30 LET secret = INT(RND() * 10) + 1\n40 LET tries = 0\n50 PRINT "I\'m thinking of a number between 1 and 10"\n60 INPUT "Your guess: "; guess\n70 IF guess = "" THEN PRINT "Game cancelled.": END\n80 LET guess = VAL(guess)\n90 LET tries = tries + 1\n100 IF guess < secret THEN PRINT "Too low!": GOTO 60\n110 IF guess > secret THEN PRINT "Too high!": GOTO 60\n120 PRINT "Correct! You got it in "; tries; " tries."\n130 END';
+                    break;
+            }
+            updateLineNumbers();
+        }
+        
+        function runCode() {
+            const code = editor.value;
+            clearOutput();
+            
+            try {
+                const interpreter = new BASICInterpreter(code, output);
+                interpreter.run();
+            } catch (e) {
+                output.textContent += "\nERROR: " + e.message;
+            }
+        }
+        
+        class BASICInterpreter {
+            constructor(code, outputElement) {
+                this.code = code;
+                this.output = outputElement;
+                this.variables = {};
+                this.lines = {};
+                this.currentLine = 0;
+                this.ended = false;
+                this.inputCallback = null;
+                this.parseProgram();
+            }
+            
+            parseProgram() {
+                // Parse each line and store in the lines object by line number
+                const codeLines = this.code.split('\n');
+                
+                for (const line of codeLines) {
+                    const trimmed = line.trim();
+                    if (trimmed === '') continue;
+                    
+                    // Extract line number
+                    const match = trimmed.match(/^(\d+)\s+(.*)$/);
+                    if (!match) {
+                        throw new Error("Invalid line format: " + line);
+                    }
+                    
+                    const lineNumber = parseInt(match[1]);
+                    const content = match[2];
+                    
+                    this.lines[lineNumber] = content;
+                }
+                
+                // Get sorted line numbers
+                this.lineNumbers = Object.keys(this.lines).map(Number).sort((a, b) => a - b);
+                
+                if (this.lineNumbers.length === 0) {
+                    throw new Error("No valid code lines found");
+                }
+                
+                this.currentLine = 0;
+            }
+            
+            run() {
+                this.currentLineIndex = 0;
+                this.runProgram();
+            }
+            
+            async runProgram() {
+                while (this.currentLineIndex < this.lineNumbers.length && !this.ended) {
+                    this.currentLine = this.lineNumbers[this.currentLineIndex];
+                    const content = this.lines[this.currentLine];
+                    
+                    try {
+                        // Check if the executeX function returns a promise (for INPUT)
+                        const result = this.executeLine(content);
+                        if (result instanceof Promise) {
+                            // Wait for the promise to resolve (user input)
+                            await result;
+                        }
+                    } catch (e) {
+                        this.output.textContent += "\nERROR at line " + this.currentLine + ": " + e.message + "\n";
+                        this.ended = true;
+                        break;
+                    }
+                    
+                    if (!this.ended) {
+                        this.currentLineIndex++;
+                    }
+                }
+            }
+            
+            executeLine(line) {
+                // Skip empty lines
+                if (!line.trim()) return;
+                
+                // Handle REM (comments)
+                if (line.trim().startsWith('REM')) {
+                    return;
+                }
+                
+                // Extract command and parameters
+                const parts = line.trim().split(/\s+/);
+                const command = parts[0].toUpperCase();
+                const params = parts.slice(1).join(' ');
+                
+                switch (command) {
+                    case 'PRINT':
+                        return this.executePrint(params);
+                    case 'LET':
+                        return this.executeLet(params);
+                    case 'IF':
+                        return this.executeIf(params);
+                    case 'GOTO':
+                        return this.executeGoto(params);
+                    case 'INPUT':
+                        return this.executeInput(params);
+                    case 'CLS':
+                        return this.executeCls();
+                    case 'END':
+                        this.ended = true;
+                        return;
+                    default:
+                        // Check if it's an assignment without LET
+                        if (line.includes('=')) {
+                            return this.executeLet(line);
+                        } else {
+                            throw new Error("Unknown command: " + command);
+                        }
+                }
+            }
+            
+            executePrint(params) {
+                let result = '';
+                let currentPart = '';
+                let parts = [];
+                let inString = false;
+                let separator = ' ';
+                
+                // Parse the PRINT statement to handle quoted strings and expressions
+                for (let i = 0; i < params.length; i++) {
+                    const char = params[i];
+                    
+                    if (char === '"' && (i === 0 || params[i-1] !== '\\')) {
+                        if (!inString) {
+                            // Starting a string - if we have collected non-string content, add it as a part
+                            if (currentPart.trim()) {
+                                parts.push({type: 'expr', value: currentPart.trim()});
+                                currentPart = '';
+                            }
+                            inString = true;
+                        } else {
+                            // Ending a string - add the string content as a part
+                            parts.push({type: 'string', value: currentPart});
+                            currentPart = '';
+                            inString = false;
+                        }
+                    } else if ((char === ';' || char === ',') && !inString) {
+                        // Delimiter - add any collected content as a part
+                        if (currentPart.trim()) {
+                            parts.push({type: 'expr', value: currentPart.trim()});
+                            currentPart = '';
+                        }
+                        separator = char === ';' ? '' : '\t';
+                    } else {
+                        // Add character to current part
+                        currentPart += char;
+                    }
+                }
+                
+                // Add any remaining content
+                if (currentPart.trim()) {
+                    parts.push({
+                        type: inString ? 'string' : 'expr', 
+                        value: currentPart.trim()
+                    });
+                }
+                
+                // Evaluate each part
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    
+                    if (part.type === 'string') {
+                        // String literal - add as is
+                        result += part.value;
+                    } else {
+                        // Expression - evaluate
+                        try {
+                            const value = this.evaluateExpression(part.value);
+                            result += value;
+                        } catch (e) {
+                            throw new Error("Error in PRINT: " + e.message);
+                        }
+                    }
+                    
+                    if (i < parts.length - 1) {
+                        result += separator;
+                    }
+                }
+                
+                // Add a newline unless the statement ends with ; or ,
+                if (!params.trim().endsWith(';') && !params.trim().endsWith(',')) {
+                    result += '\n';
+                }
+                
+                this.output.textContent += result;
+            }
+            
+            executeLet(params) {
+                let assignmentExpression = params;
+                if (params.startsWith('LET ')) {
+                    assignmentExpression = params.substring(4);
+                }
+                
+                const parts = assignmentExpression.split('=');
+                if (parts.length !== 2) {
+                    throw new Error("Invalid LET statement: " + params);
+                }
+                
+                const variableName = parts[0].trim();
+                const expression = parts[1].trim();
+                
+                const value = this.evaluateExpression(expression);
+                this.variables[variableName] = value;
+            }
+            
+            executeIf(params) {
+                // Extract condition and action parts
+                const thenIndex = params.toUpperCase().indexOf('THEN');
+                if (thenIndex === -1) {
+                    throw new Error("IF statement missing THEN clause");
+                }
+                
+                const condition = params.substring(0, thenIndex).trim();
+                const actionPart = params.substring(thenIndex + 4).trim();
+                
+                // Evaluate the condition
+                let conditionResult = false;
+                try {
+                    conditionResult = this.evaluateExpression(condition);
+                } catch (e) {
+                    // Special handling for common comparison errors
+                    if (condition.includes('=') && (condition.includes('""') || condition.includes("''"))) {
+                        // Special case for empty string comparisons - do a direct check
+                        const parts = condition.split('=').map(p => p.trim());
+                        if (parts.length === 2) {
+                            const leftVar = this.variables[parts[0]];
+                            const rightVal = parts[1];
+                            
+                            if ((leftVar === "" || leftVar === undefined) && 
+                                (rightVal === "''" || rightVal === '""' || rightVal === "")) {
+                                conditionResult = true;
+                            }
+                        }
+                    } else {
+                        // Re-throw other errors
+                        throw e;
+                    }
+                }
+                
+                if (conditionResult) {
+                    // Check for ELSE clause in the action part
+                    const elseParts = actionPart.split(/\s+ELSE\s+/i);
+                    const thenAction = elseParts[0].trim();
+                    
+                    // Handle action
+                    if (thenAction.toUpperCase().startsWith('GOTO')) {
+                        this.executeGoto(thenAction.substring(4).trim());
+                    } else {
+                        // Handle multiple statements separated by colons
+                        const statements = thenAction.split(':');
+                        for (const statement of statements) {
+                            if (statement.trim()) {
+                                this.executeLine(statement.trim());
+                            }
+                        }
+                    }
+                } else if (actionPart.toUpperCase().includes('ELSE')) {
+                    // Execute the ELSE part
+                    const elseParts = actionPart.split(/\s+ELSE\s+/i);
+                    if (elseParts.length > 1) {
+                        const elseAction = elseParts[1].trim();
+                        
+                        // Handle ELSE action
+                        if (elseAction.toUpperCase().startsWith('GOTO')) {
+                            this.executeGoto(elseAction.substring(4).trim());
+                        } else {
+                            // Handle multiple statements separated by colons
+                            const statements = elseAction.split(':');
+                            for (const statement of statements) {
+                                if (statement.trim()) {
+                                    this.executeLine(statement.trim());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            executeGoto(params) {
+                const lineNumber = parseInt(params.trim());
+                if (isNaN(lineNumber) || !this.lines[lineNumber]) {
+                    throw new Error("Invalid GOTO line number: " + params);
+                }
+                
+                // Find the index of the line number in our sorted array
+                this.currentLineIndex = this.lineNumbers.indexOf(lineNumber);
+                if (this.currentLineIndex === -1) {
+                    throw new Error("Line number not found: " + lineNumber);
+                }
+                
+                // Subtract 1 because the run loop will increment it
+                this.currentLineIndex--;
+            }
+            
+            executeInput(params) {
+                // Extract prompt and variable name
+                let promptText = '';
+                let varName = params;
+                
+                if (params.includes('"')) {
+                    const promptEnd = params.lastIndexOf('"');
+                    promptText = params.substring(1, promptEnd);
+                    
+                    // Find the variable name after the semicolon
+                    const semicolonPos = params.indexOf(';', promptEnd);
+                    if (semicolonPos !== -1) {
+                        varName = params.substring(semicolonPos + 1).trim();
+                    } else {
+                        throw new Error("Invalid INPUT format: " + params);
+                    }
+                }
+                
+                // Display the prompt
+                this.output.textContent += promptText;
+                
+                // Create a custom input box in the output area
+                const inputBox = document.createElement('div');
+                inputBox.className = 'input-box';
+                
+                const inputField = document.createElement('input');
+                inputField.type = 'text';
+                inputField.placeholder = 'Enter your response...';
+                
+                const submitButton = document.createElement('button');
+                submitButton.textContent = 'Submit';
+                
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = 'Cancel';
+                
+                inputBox.appendChild(inputField);
+                inputBox.appendChild(submitButton);
+                inputBox.appendChild(cancelButton);
+                
+                this.output.appendChild(inputBox);
+                
+                // Focus the input field
+                inputField.focus();
+                
+                // Create a promise to handle the input
+                return new Promise((resolve) => {
+                    // Function to process the input
+                    const processInput = (value) => {
+                        // Remove the input box
+                        inputBox.remove();
+                        
+                        // Process the input value
+                        if (value !== null) {
+                            let processedValue = value.trim();
+                            
+                            // Try to convert to number if possible
+                            const numberValue = parseFloat(processedValue);
+                            if (!isNaN(numberValue) && numberValue.toString() === processedValue) {
+                                processedValue = numberValue;
+                            }
+                            
+                            // Store in variables
+                            this.variables[varName] = processedValue;
+                            this.output.textContent += value + '\n';
+                        } else {
+                            // Cancelled input
+                            this.output.textContent += '[Input cancelled]\n';
+                            this.variables[varName] = "";
+                        }
+                        
+                        // Resume execution
+                        resolve();
+                    };
+                    
+                    // Submit button handler
+                    submitButton.addEventListener('click', () => {
+                        processInput(inputField.value);
+                    });
+                    
+                    // Cancel button handler
+                    cancelButton.addEventListener('click', () => {
+                        processInput(null);
+                    });
+                    
+                    // Enter key handler
+                    inputField.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            processInput(inputField.value);
+                        } else if (e.key === 'Escape') {
+                            processInput(null);
+                        }
+                    });
+                });
+            }
+            
+            executeCls() {
+                this.output.textContent = '';
+            }
+            
+            evaluateExpression(expression) {
+                // Check if this is just a string literal
+                if (expression.startsWith('"') && expression.endsWith('"')) {
+                    return expression.slice(1, -1);
+                }
+                
+                // Replace variable names with their values
+                let processedExpression = expression;
+                
+                // Handle VAL function to convert strings to numbers
+                processedExpression = processedExpression.replace(/VAL\s*\(\s*([^)]+)\s*\)/g, (match, arg) => {
+                    // If arg is a variable name, get its value
+                    if (this.variables[arg] !== undefined) {
+                        const val = parseFloat(this.variables[arg]);
+                        return isNaN(val) ? 0 : val;
+                    }
+                    // If arg is in quotes, parse the string inside
+                    if (arg.startsWith('"') && arg.endsWith('"')) {
+                        const val = parseFloat(arg.slice(1, -1));
+                        return isNaN(val) ? 0 : val;
+                    }
+                    // Otherwise just try to parse the raw arg
+                    const val = parseFloat(arg);
+                    return isNaN(val) ? 0 : val;
+                });
+                
+                // Handle RND() function - make sure it's called with parentheses
+                processedExpression = processedExpression.replace(/RND\s*\(\s*\)/g, 'Math.random()');
+                // Fallback for RND without parentheses
+                processedExpression = processedExpression.replace(/\bRND\b(?!\s*\()/g, 'Math.random()');
+                
+                // Replace INT with Math.floor
+                processedExpression = processedExpression.replace(/INT\s*\(/g, 'Math.floor(');
+                
+                // Special handling for comparison operators
+                processedExpression = processedExpression.replace(/([<>])=/g, '$1=');
+                processedExpression = processedExpression.replace(/<>/g, '!=');
+                
+                // Replace variable names with their values
+                for (const varName in this.variables) {
+                    // Use a regex with word boundaries to avoid partial replacements
+                    const regex = new RegExp('\\b' + varName + '\\b', 'g');
+                    let replaceValue = this.variables[varName];
+                    
+                    // If the value is a string, wrap it in quotes
+                    if (typeof replaceValue === 'string') {
+                        replaceValue = '"' + replaceValue + '"';
+                    }
+                    
+                    // Handle undefined or empty strings properly
+                    if (replaceValue === undefined || replaceValue === '') {
+                        replaceValue = '""';
+                    }
+                    
+                    processedExpression = processedExpression.replace(regex, replaceValue);
+                }
+                
+                // For debugging
+                // console.log('Evaluating:', processedExpression);
+                
+                // Evaluate the processed expression
+                try {
+                    // Use Function instead of eval for better isolation
+                    return new Function('return ' + processedExpression)();
+                } catch (e) {
+                    throw new Error("Cannot evaluate: " + expression + " (Processed as: " + processedExpression + ")");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
